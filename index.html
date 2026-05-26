@@ -3,115 +3,315 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Khảo Sát Trực Tuyến Từ Excel</title>
+    <title>Hệ Thống Khảo Sát Cao Cấp</title>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
 </head>
-<body class="bg-gray-50 min-h-screen p-6 flex flex-col items-center">
+<body id="bodyBg" class="bg-slate-50 min-h-screen p-4 md:p-6 flex flex-col items-center transition-colors duration-300">
 
-    <div class="w-full max-w-3xl bg-white rounded-2xl shadow-lg p-6 mb-6">
-        <h1 class="text-2xl font-bold text-center text-indigo-600 mb-4">📊 HỆ THỐNG KHẢO SÁT TỪ EXCEL</h1>
+    <div class="w-full max-w-3xl bg-white rounded-2xl shadow-md p-6 mb-6 border border-slate-100">
+        <h1 class="text-2xl font-bold text-center text-indigo-600 mb-2">🛠️ KHẢO SÁT MCQ (ADMIN)</h1>
         
-        <div class="flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-xl p-6 bg-gray-50">
-            <p class="text-sm text-gray-500 mb-3">Chọn file câu hỏi Excel (.xlsx) của bạn</p>
-            <input type="file" id="excelFile" accept=".xlsx" class="mb-3 text-sm text-gray-600">
-            <button onclick="uploadExcel()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-6 rounded-lg transition shadow cursor-pointer">
-                Tải câu hỏi lên
-            </button>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 bg-slate-50 p-4 rounded-xl border border-slate-200">
+            <div>
+                <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Bước 1: Chọn file Excel đề bài</label>
+                <input type="file" id="excelFile" accept=".xlsx" class="text-xs text-slate-600 w-full">
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Bước 2: Cấu hình bài thi</label>
+                <div class="flex items-center gap-4 mt-1">
+                    <div class="flex items-center gap-1 text-sm">
+                        <input type="number" id="quizTime" value="10" min="1" class="w-14 p-1 text-center border rounded bg-white font-bold"> phút
+                    </div>
+                    <label class="flex items-center gap-1 text-sm text-slate-700 cursor-pointer">
+                        <input type="checkbox" id="allowBack" checked class="w-4 h-4 text-indigo-600"> Cho phép quay lại câu trước
+                    </label>
+                </div>
+            </div>
+            <div class="md:col-span-2">
+                <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Bước 3: Thiết kế màu giao diện bài kiểm tra</label>
+                <div class="flex gap-3 mt-1">
+                    <button onclick="changeTheme('indigo')" class="w-8 h-8 rounded-full bg-indigo-600 ring-2 ring-offset-2 ring-indigo-600 cursor-pointer"></button>
+                    <button onclick="changeTheme('emerald')" class="w-8 h-8 rounded-full bg-emerald-600 cursor-pointer"></button>
+                    <button onclick="changeTheme('rose')" class="w-8 h-8 rounded-full bg-rose-600 cursor-pointer"></button>
+                    <button onclick="changeTheme('amber')" class="w-8 h-8 rounded-full bg-amber-500 cursor-pointer"></button>
+                    <button onclick="changeTheme('dark')" class="w-8 h-8 rounded-full bg-slate-800 cursor-pointer"></button>
+                </div>
+            </div>
+        </div>
+        
+        <button onclick="uploadExcel()" id="themeBtn" class="w-full mt-4 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2.5 rounded-xl transition shadow cursor-pointer text-sm">
+            🚀 Lưu Cài Đặt & Cập Nhật Đề Lên Mạng
+        </button>
+    </div>
+
+    <div id="quizApp" class="w-full max-w-3xl hidden">
+        <div class="bg-white rounded-xl shadow p-4 mb-4 flex justify-between items-center border border-slate-100">
+            <div class="text-sm font-medium text-slate-600">
+                Tiến độ: <span id="progressText" class="font-bold text-slate-800">1/10</span>
+            </div>
+            <div id="timerBox" class="flex items-center gap-1 bg-red-50 text-red-600 px-3 py-1.5 rounded-lg font-bold text-base border border-red-100 animate-pulse">
+                ⏱️ <span id="countdown">00:00</span>
+            </div>
+        </div>
+
+        <div id="questionCard" class="bg-white p-6 rounded-2xl shadow-md border border-slate-100 min-h-[300px] flex flex-col justify-between">
+            <div id="questionContent">
+                </div>
+
+            <div class="flex justify-between items-center mt-6 pt-4 border-t border-slate-100">
+                <button id="prevBtn" onclick="goToPrev()" class="px-4 py-2 border rounded-xl font-medium text-sm text-slate-600 hover:bg-slate-50 disabled:opacity-0 transition cursor-pointer">
+                    ⬅️ Câu trước
+                </button>
+                <button id="nextBtn" onclick="goToNext()" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl text-sm transition shadow cursor-pointer">
+                    Câu tiếp theo ➡️
+                </button>
+            </div>
         </div>
     </div>
 
-    <div id="quizContainer" class="w-full max-w-3xl space-y-6 hidden"></div>
+    <div id="resultBox" class="w-full max-w-xl bg-white rounded-2xl shadow-lg p-8 text-center border border-slate-100 hidden">
+        <h2 class="text-3xl font-extrabold text-slate-800 mb-2">🎉 HOÀN THÀNH BÀI THI</h2>
+        <p class="text-slate-500 text-sm mb-6">Hệ thống đã ghi nhận kết quả của bạn</p>
+        <div class="inline-block bg-indigo-50 border border-indigo-100 rounded-2xl p-6 mb-6 w-full">
+            <p class="text-slate-600 font-medium text-sm">Số câu đúng của bạn</p>
+            <p class="text-5xl font-black text-indigo-600 my-1" id="scoreText">0 / 0</p>
+            <p class="text-sm font-semibold text-indigo-500" id="percentText">0%</p>
+        </div>
+        <button onclick="location.reload()" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-semibold py-3 rounded-xl transition shadow cursor-pointer">
+            🔄 Làm bài thi mới (Trộn lại đề)
+        </button>
+    </div>
 
     <script>
+        const BACKEND_URL = 'https://mcq-team.onrender.com'; 
         let questionsList = [];
+        let currentIndex = 0; // Câu hỏi hiện tại đang đứng (bắt đầu từ câu 0)
+        let userAnswers = {}; // Lưu đáp án người học đã chọn { questionId: 'a' }
+        let timerInterval;
+        let currentTheme = 'indigo';
 
+        // Tự động tải đề khi vừa vào trang
+        window.onload = async function() {
+            await fetchQuizFromServer();
+        };
+
+        // Đổi màu giao diện bài thi
+        function changeTheme(theme) {
+            currentTheme = theme;
+            const body = document.getElementById('bodyBg');
+            const themeBtn = document.getElementById('themeBtn');
+            const nextBtn = document.getElementById('nextBtn');
+            
+            // Reset lớp
+            body.className = "min-h-screen p-4 md:p-6 flex flex-col items-center transition-colors duration-300 ";
+            themeBtn.className = "w-full mt-4 text-white font-semibold py-2.5 rounded-xl transition shadow cursor-pointer text-sm ";
+            
+            if(theme === 'indigo') { body.classList.add('bg-slate-50'); themeBtn.classList.add('bg-indigo-600', 'hover:bg-indigo-700'); }
+            if(theme === 'emerald') { body.classList.add('bg-stone-50'); themeBtn.classList.add('bg-emerald-600', 'hover:bg-emerald-700'); }
+            if(theme === 'rose') { body.classList.add('bg-zinc-50'); themeBtn.classList.add('bg-rose-600', 'hover:bg-rose-700'); }
+            if(theme === 'amber') { body.classList.add('bg-orange-50/30'); themeBtn.classList.add('bg-amber-500', 'hover:bg-amber-600'); }
+            if(theme === 'dark') { body.classList.add('bg-slate-900'); themeBtn.classList.add('bg-slate-700', 'hover:bg-slate-600'); }
+        }
+
+        // Lấy dữ liệu từ Backend về và bắt đầu trộn + cấu hình
+        async function fetchQuizFromServer() {
+            try {
+                const response = await fetch(`${BACKEND_URL}/api/get-questions`);
+                const data = await response.json();
+
+                if (data.success && data.questions.length > 0) {
+                    questionsList = shuffleQuiz(data.questions);
+                    currentIndex = 0;
+                    userAnswers = {};
+                    
+                    document.getElementById('quizApp').classList.remove('hidden');
+                    document.getElementById('resultBox').classList.add('hidden');
+                    
+                    // Khởi chạy đồng hồ đếm ngược
+                    const minutes = parseInt(document.getElementById('quizTime').value) || 10;
+                    startTimer(minutes * 60);
+                    
+                    // Hiển thị câu hỏi đầu tiên
+                    showQuestion(currentIndex);
+                }
+            } catch (err) {
+                console.log("Đang đợi server khởi động...");
+            }
+        }
+
+        // Thuật toán trộn đề (Trộn câu hỏi và trộn đáp án)
+        function shuffleQuiz(questions) {
+            let shuffled = [...questions];
+            for (let i = shuffled.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+            }
+            return shuffled.map(q => {
+                const keys = ['a', 'b', 'c', 'd'];
+                const correctText = q.options[q.answer];
+                for (let i = keys.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [keys[i], keys[j]] = [keys[j], keys[i]];
+                }
+                let newOpts = {}; let newAns = '';
+                keys.forEach((k, idx) => {
+                    const target = ['a', 'b', 'c', 'd'][idx];
+                    newOpts[target] = q.options[k];
+                    if (q.options[k] === correctText) newAns = target;
+                });
+                return { ...q, options: newOpts, answer: newAns };
+            });
+        }
+
+        // Hàm hiển thị một câu hỏi đơn lẻ
+        function showQuestion(index) {
+            const q = questionsList[index];
+            document.getElementById('progressText').innerText = `${index + 1} / ${questionsList.length}`;
+            
+            // Xử lý ẩn/hiện nút câu trước dựa trên cấu hình Admin cài đặt
+            const allowBack = document.getElementById('allowBack').checked;
+            const prevBtn = document.getElementById('prevBtn');
+            if (index === 0 || !allowBack) {
+                prevBtn.disabled = true;
+                prevBtn.classList.add('opacity-0', 'pointer-events-none');
+            } else {
+                prevBtn.disabled = false;
+                prevBtn.classList.remove('opacity-0', 'pointer-events-none');
+            }
+
+            // Đổi chữ nút tiếp theo thành "Nộp bài" nếu là câu cuối cùng
+            const nextBtn = document.getElementById('nextBtn');
+            if (index === questionsList.length - 1) {
+                nextBtn.innerText = "🏁 Nộp bài thi";
+                nextBtn.className = "px-5 py-2 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl text-sm transition shadow cursor-pointer";
+            } else {
+                nextBtn.innerText = "Câu tiếp theo ➡️";
+                nextBtn.className = "px-5 py-2 text-white font-semibold rounded-xl text-sm transition shadow cursor-pointer " + 
+                    (currentTheme === 'dark' ? 'bg-slate-700 hover:bg-slate-600' : 
+                     currentTheme === 'emerald' ? 'bg-emerald-600 hover:bg-emerald-700' :
+                     currentTheme === 'rose' ? 'bg-rose-600 hover:bg-rose-700' :
+                     currentTheme === 'amber' ? 'bg-amber-500 hover:bg-amber-600' : 'bg-indigo-600 hover:bg-indigo-700');
+            }
+
+            // Đổ nội dung câu hỏi & Media
+            let mediaHtml = '';
+            if (q.media) {
+                if (q.media.match(/\.(mp4|webm|ogg)$/i) || q.media.includes('mov_bbb')) {
+                    mediaHtml = `<video src="${q.media}" controls class="max-w-full h-44 rounded-xl my-3 mx-auto"></video>`;
+                } else {
+                    mediaHtml = `<img src="${q.media}" class="max-w-full h-44 object-cover rounded-xl my-3 mx-auto">`;
+                }
+            }
+
+            const contentBox = document.getElementById('questionContent');
+            contentBox.innerHTML = `
+                <p class="font-bold text-slate-800 text-lg md:text-xl mb-2">Câu ${index + 1}: ${q.question}</p>
+                ${mediaHtml}
+                <div class="grid grid-cols-1 gap-3 mt-4">
+                    ${['a', 'b', 'c', 'd'].map(opt => {
+                        const isSelected = userAnswers[q.id] === opt;
+                        const activeClass = isSelected 
+                            ? 'border-indigo-600 bg-indigo-50 font-bold text-indigo-700 ring-2 ring-indigo-100' 
+                            : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-700';
+                        return `
+                            <button onclick="selectOption('${q.id}', '${opt}')" class="p-3.5 text-left border rounded-xl transition text-sm cursor-pointer ${activeClass}">
+                                <span class="uppercase font-bold mr-1">${opt}.</span> ${q.options[opt]}
+                            </button>
+                        `;
+                    }).join('')}
+                </div>
+            `;
+        }
+
+        // Ghi nhận đáp án người học lựa chọn
+        function selectOption(questionId, option) {
+            userAnswers[questionId] = option;
+            showQuestion(currentIndex); // Vẽ lại câu hỏi để cập nhật hiệu ứng nút được chọn
+        }
+
+        function goToPrev() {
+            if (currentIndex > 0) {
+                currentIndex--;
+                showQuestion(currentIndex);
+            }
+        }
+
+        function goToNext() {
+            if (currentIndex < questionsList.length - 1) {
+                currentIndex++;
+                showQuestion(currentIndex);
+            } else {
+                // Nếu là câu cuối thì tiến hành Nộp Bài
+                submitQuiz();
+            }
+        }
+
+        // Bộ đếm ngược thời gian
+        function startTimer(duration) {
+            clearInterval(timerInterval);
+            let timer = duration;
+            const display = document.getElementById('countdown');
+            
+            timerInterval = setInterval(() => {
+                let minutes = Math.floor(timer / 60);
+                let seconds = timer % 60;
+
+                minutes = minutes < 10 ? "0" + minutes : minutes;
+                seconds = seconds < 10 ? "0" + seconds : seconds;
+
+                display.innerText = `${minutes}:${seconds}`;
+
+                if (--timer < 0) {
+                    clearInterval(timerInterval);
+                    alert("⏰ Đã hết thời gian làm bài! Hệ thống tự động nộp bài.");
+                    submitQuiz();
+                }
+            }, 1000);
+        }
+
+        // Hàm tính điểm và nộp bài
+        function submitQuiz() {
+            clearInterval(timerInterval);
+            let score = 0;
+            
+            questionsList.forEach(q => {
+                if (userAnswers[q.id] === q.answer) {
+                    score++;
+                }
+            });
+
+            document.getElementById('quizApp').classList.add('hidden');
+            const resultBox = document.getElementById('resultBox');
+            resultBox.classList.remove('hidden');
+            
+            document.getElementById('scoreText').innerText = `${score} / ${questionsList.length}`;
+            const percent = Math.round((score / questionsList.length) * 100);
+            document.getElementById('percentText').innerText = `${percent}% câu trả lời đúng`;
+        }
+
+        // Hàm Upload file Excel mới dành cho Admin
         async function uploadExcel() {
             const fileInput = document.getElementById('excelFile');
-            if (fileInput.files.length === 0) return alert('Vui lòng chọn một file Excel trước!');
+            if (fileInput.files.length === 0) return alert('Vui lòng chọn một file Excel đề thi trước!');
 
             const formData = new FormData();
             formData.append('file', fileInput.files[0]);
 
             try {
-                const response = await fetch('https://mcq-team.onrender.com/api/upload-excel', {
+                const response = await fetch(`${BACKEND_URL}/api/upload-excel`, {
                     method: 'POST',
                     body: formData
                 });
                 const data = await response.json();
 
                 if (data.success) {
-                    questionsList = data.questions;
-                    renderQuestions(); 
+                    alert('Nạp đề và lưu cấu hình thành công! Bài thi sẽ tự động chạy ngay dưới đây.');
+                    await fetchQuizFromServer(); // Tải đề mới về chạy luôn
                 } else {
                     alert(data.error);
                 }
             } catch (err) {
-                alert('Không thể kết nối tới server backend! Bạn đã chạy lệnh node server.js chưa?');
-            }
-        }
-
-        function renderQuestions() {
-            const container = document.getElementById('quizContainer');
-            container.innerHTML = '';
-            container.classList.remove('hidden');
-
-            questionsList.forEach((q) => {
-                let mediaHtml = '';
-                if (q.media) {
-                    if (q.media.match(/\.(mp4|webm|ogg)$/i) || q.media.includes('mov_bbb')) {
-                        mediaHtml = `<video src="${q.media}" controls class="max-w-full h-48 rounded-lg my-3 mx-auto"></video>`;
-                    } else {
-                        mediaHtml = `<img src="${q.media}" class="max-w-full h-48 object-cover rounded-lg my-3 mx-auto" alt="Hình ảnh câu hỏi">`;
-                    }
-                }
-
-                const qCard = document.createElement('div');
-                qCard.className = "bg-white p-6 rounded-xl shadow border border-gray-100";
-                qCard.innerHTML = `
-                    <p class="font-bold text-gray-800 text-lg">Câu ${q.id}: ${q.question}</p>
-                    ${mediaHtml}
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4" id="options-box-${q.id}">
-                        <button onclick="checkAnswer(${q.id}, 'a')" id="btn-${q.id}-a" class="p-3 text-left border rounded-xl hover:bg-gray-50 transition font-medium cursor-pointer">A. ${q.options.a}</button>
-                        <button onclick="checkAnswer(${q.id}, 'b')" id="btn-${q.id}-b" class="p-3 text-left border rounded-xl hover:bg-gray-50 transition font-medium cursor-pointer">B. ${q.options.b}</button>
-                        <button onclick="checkAnswer(${q.id}, 'c')" id="btn-${q.id}-c" class="p-3 text-left border rounded-xl hover:bg-gray-50 transition font-medium cursor-pointer">C. ${q.options.c}</button>
-                        <button onclick="checkAnswer(${q.id}, 'd')" id="btn-${q.id}-d" class="p-3 text-left border rounded-xl hover:bg-gray-50 transition font-medium cursor-pointer">D. ${q.options.d}</button>
-                    </div>
-                    <p id="feedback-${q.id}" class="mt-3 font-semibold text-sm hidden"></p>
-                `;
-                container.appendChild(qCard);
-            });
-        }
-
-        function checkAnswer(questionId, selectedOption) {
-            const question = questionsList.find(q => q.id === questionId);
-            const correctOpt = question.answer; 
-
-            const optionsBox = document.getElementById(`options-box-${questionId}`);
-            const buttons = optionsBox.getElementsByTagName('button');
-            for (let btn of buttons) {
-                btn.disabled = true;
-                btn.classList.remove('cursor-pointer');
-                btn.classList.add('cursor-not-allowed');
-            }
-
-            const selectedBtn = document.getElementById(`btn-${questionId}-${selectedOption}`);
-            const correctBtn = document.getElementById(`btn-${questionId}-${correctOpt}`);
-            const feedbackText = document.getElementById(`feedback-${questionId}`);
-
-            feedbackText.classList.remove('hidden');
-
-            if (selectedOption === correctOpt) {
-                selectedBtn.classList.add('bg-green-100', 'border-green-500', 'text-green-700');
-                feedbackText.innerText = "🎉 Bạn đã trả lời đúng!";
-                feedbackText.className = "mt-3 font-semibold text-sm text-green-600";
-            } else {
-                selectedBtn.classList.add('bg-red-100', 'border-red-500', 'text-red-700');
-                if (correctBtn) {
-                    correctBtn.classList.remove('bg-gray-50');
-                    correctBtn.classList.add('bg-green-100', 'border-green-500', 'text-green-700');
-                }
-                feedbackText.innerText = `❌ Sai rồi! Đáp án đúng phải là: ${correctOpt.toUpperCase()}`;
-                feedbackText.className = "mt-3 font-semibold text-sm text-red-600";
+                alert('Lỗi kết nối tới máy chủ!');
             }
         }
     </script>
